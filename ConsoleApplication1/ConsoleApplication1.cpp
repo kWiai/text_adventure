@@ -2,11 +2,12 @@
 #include <vector>
 #include <string>
 bool check;
+bool chk;
 const int sum_location = 4;
 bool present;
 bool use_com;
 int r;
-std::string tr;
+int tr;
 std::string variations[3]{"stone","scissors","paper"};
 std::string matrix[3][3]{{"draw","win","lose"},{"lose","draw","win"},{"win","lose","draw"}};
 std::string item;
@@ -15,6 +16,7 @@ struct location {
 	std::string description;
 	int num;
 	std::vector<int> door;
+	std::vector<int> close_door;
 	std::vector<std::string> items;
 };
 struct hero {
@@ -24,16 +26,16 @@ struct hero {
 };
 std::string path;
 location locations[sum_location]{
-	{ "hall","center of home",0,{1},{} },
-	{ "hallway","connect room",1,{0},{"key to kitchen"}},
-	{ "kitchen", "eat room", 2, {1,3},{"hp poizon"}},
-	{ "bathroom", "wash room", 3,{2},{} } };
+	{ "hall","center of home",0,{1},{},{} },
+	{ "hallway","connect room",1,{0},{2}, { "key to kitchen" }},
+	{ "kitchen", "eat room", 2, {1,3},{},{"hp poizon"}},
+	{ "bathroom", "wash room", 3,{2},{},{} } };
 hero man{ 0,10,{} };
 std::string commands[5] = { "List","Trunk","Pick","Drop","Use" };
 int main()
 {
 	std::cout << "exiting locations: \n";
-	for (int i = 0; i <= sum_location - 1; i++) {
+	for (int i = 0; i < sum_location; i++) {
 		std::cout << locations[i].name << "\n";
 	}
 	std::cout << "\nexiting commands: \n";
@@ -45,11 +47,7 @@ int main()
 			break;
 		}
 		use_com = false;
-		for (int i = 0; i <= sum_location - 1; i++) {
-			if (man.current_location == locations[i].num) {
-				std::cout << "\n" << "description of the current location : " << locations[i].description << "\n";
-			}
-		}
+		std::cout << "\n" << "description of the current location : " << locations[man.current_location].description << "\n";
 
 		std::cout << "send next location name / command name \n";
 		std::cin >> path;
@@ -121,14 +119,26 @@ int main()
 				auto& inventory_items = man.inventory;
 				auto it = std::find(inventory_items.begin(), inventory_items.end(), item);
 				if (it != inventory_items.end()) {
-					if (item == "key to kitchen") {
-						if (man.current_location == 1) {
-							std::cout << "door to kitchen opened";
-							locations[1].door.push_back(2);
-							man.inventory.erase(it);
+
+					if (item.find("key to") != std::string::npos) {
+						chk = false;
+						std::string loc = item.substr(7);
+						std::cout << loc << "\n";
+						for (int i = 0; i < sum_location; i++) {
+							if (loc == locations[i].name) {
+								auto& cl_doors = locations[man.current_location].close_door;
+								auto is = std::find(cl_doors.begin(), cl_doors.end(), locations[i].num);
+								if (is != cl_doors.end()) {
+									chk = true;
+									std::cout << item << " is used!\n" << loc << ": opened\n";
+									locations[man.current_location].door.push_back(locations[i].num);
+									locations[man.current_location].close_door.erase(is);
+									man.inventory.erase(it);
+								}
+							}
 						}
-						else {
-							std::cout << "You are in the wrong location. \n";
+						if (not chk) {
+							std::cout << "Cannot be used in the current location \n";
 						}
 					}
 					else if (item == "hp poizon") {
@@ -145,7 +155,7 @@ int main()
 		else {
 			check = false;
 			present = false;
-			for (int i = 0; i <= sum_location - 1; i++) {
+			for (int i = 0; i < sum_location; i++) {
 				if (path == locations[i].name) {
 					check = true;
 					if (locations[i].num == man.current_location) {
@@ -167,57 +177,25 @@ int main()
 							while (man.hp > 0) {
 								srand(time(0));
 								r = 0 + rand() % 2;
-								std::cout << "change stone/scissors/paper \n";
+								std::cout << "change selection number 1 stone/2 scissors/3 paper \n";
 								std::cin >> tr;
-								if (tr == variations[0]) {
-									std::string answer = matrix[0][r];
-									std::cout << answer << '\n';
+								if (tr > 0 and tr < 4) {
+									std::string answer = matrix[tr - 1][r];
 									if (answer == "win") {
-										std::cout << "congratulations! \n";
+										std::cout << answer << "\ncongratulations! \n";
 										break;
 									}
 									else if (answer == "lose") {
-										std::cout << "Have you been injured! \n";
+										std::cout <<answer<< "\nHave you been injured! \n";
 										man.hp -= 5;
 									}
 									else {
-
-									}
-								}
-								else if (tr == variations[1]) {
-									std::string answer = matrix[1][r];
-									std::cout << answer << '\n';
-									if (answer == "win") {
-										std::cout << "congratulations! \n";
-										break;
-									}
-									else if (answer == "lose") {
-										std::cout << "Have you been injured! \n";
-										man.hp -= 5;
-									}
-									else {
-
-									}
-								}
-								else if (tr == variations[2]) {
-									std::string answer = matrix[2][r];
-									std::cout << answer << "\n";
-									if (answer == "win") {
-										std::cout << "congratulations! \n";
-										break;
-									}
-									else if (answer == "lose") {
-										std::cout << "Have you been injured! \n";
-										man.hp -= 5;
-									}
-									else {
-
+										std::cout << answer <<"\n";
 									}
 								}
 								else {
 									std::cout << "wrong \n";
 								}
-								
 							}
 							if (man.hp <= 0) {
 								std::cout << "you're dead \n";
